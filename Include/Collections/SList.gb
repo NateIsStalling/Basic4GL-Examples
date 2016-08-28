@@ -1,0 +1,326 @@
+'slist.gb
+'Description: String list structure, SList, and related functions + subroutines
+'Author: Nathaniel Nielsen
+'Last Updated: August 27, 2016
+'Uses doubly linked list implementation
+'See: https://en.wikipedia.org/wiki/Doubly_linked_list
+
+'Default value returned by SListValueAt$()
+const SLIST_DEFAULT_VALUE$ = ""
+
+'SList node, is doubly linked
+struc SListNode
+    dim value$
+    dim SListNode &prevNode, SListNode &nextNode
+endstruc
+
+'String list, is doubly linked
+struc SList
+    'First element in list
+    dim SListNode &head
+    'Last element in list
+    dim SListNode &tail
+endstruc   
+
+'Function declarations
+declare sub SListInsertBeginning(SList &list, value$)
+declare sub SListInsertNodeBeginning(SList &list, SListNode &newNode)
+declare sub SListInsertEnd(SList &list, value$)
+declare sub SListInsertNodeEnd(SList &list, SListNode &newNode)
+declare sub SListInsertAt(SList &list, index, value$)
+declare sub SListInsertNodeAt(SList &list, index, SListNode &newNode)
+declare sub SListSetValueAt(SList &list, index, value$)
+
+declare sub SListInsertAfter(SList &list, SListNode &node, SListNode &newNode)
+declare sub SListInsertBefore(SList &list, SListNode &node, SListNode &newNode)
+
+declare sub SListRemove(SList &list, SListNode &node)
+declare sub SListRemoveAt(SList &list, index)
+declare sub SListRemoveFirst(SList &list, value$)
+declare sub SListRemoveLast(SList &list, value$)
+
+declare function SListValueAt$(SList &list, index)
+declare function SListNode &SListNodeAt(SList &list, index)
+declare function SListNodeEquals(SListNode &node1, SListNode &node2)
+
+declare function SListSize(SList &list)
+ 
+'Add value to beginning of SList
+sub SListInsertBeginning(SList &list, value$)
+    'Allocate new node
+    dim SListNode &node
+    alloc node
+    node.value$ = value$
+
+    if &list.head = null then 
+        &list.head = &node
+        &list.tail = &node
+        &node.prevNode = null
+        &node.nextNode = null
+    else
+        SListInsertBefore(list, list.head, node)
+    endif
+endsub
+
+'Add node to beginning of SList
+sub SListInsertNodeBeginning(SList &list, SListNode &newNode)
+    if &list.head = null then 
+        &list.head = &newNode
+        &list.tail = &newNode
+        &newNode.prevNode = null
+        &newNode.nextNode = null
+    else
+        SListInsertBefore(list, list.head, newNode)
+    endif
+endsub
+
+'Add value to end of SList
+sub SListInsertEnd(SList &list, value$)
+    'Allocate new node
+    dim SListNode &node
+    alloc node
+    node.value$ = value$
+
+    if &list.tail = null then 
+        SListInsertNodeBeginning(list, node)
+    else
+        SListInsertAfter(list, list.tail, node)
+    endif
+endsub
+
+'Add node to end of SList
+sub SListInsertNodeEnd(SList &list, SListNode &newNode)
+    if &list.tail = null then 
+        SListInsertNodeBeginning(list, newNode)
+    else
+        SListInsertAfter(list, list.tail, newNode)
+    endif
+endsub
+
+'Insert node at index in a SList;
+'Inserts node at beginning of list if list is empty or index is less than 0,
+'Inserts node at end of list if index is greater than the list's size
+sub SListInsertAt(SList &list, index, value$)
+    dim i
+    dim SListNode &node = &list.head
+    'Allocate new node
+    dim SListNode &newNode
+    alloc newNode
+    newNode.value$ = value$
+
+    'Check if list is empty
+    if &list.head <> null and index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Add new node
+                SListInsertBefore(list, node, newNode)
+                return  'Exit loop
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+        'Index was out of range; add new node to end of list
+        SListInsertNodeEnd(list, newNode)
+    else
+        'List is empty or index is invalid
+        SListInsertNodeBeginning(list, newNode)
+    endif
+endsub
+        
+'Insert node at index in a SList;
+'Inserts node at beginning of list if list is empty or index is less than 0,
+'Inserts node at end of list if index is greater than the list's size
+sub SListInsertNodeAt(SList &list, index, SListNode &newNode)
+    dim i
+    dim SListNode &node = &list.head
+    'Check if list is empty
+    if &list.head <> null and index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Add new node
+                SListInsertBefore(list, node, newNode)
+                return  'Exit loop
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+        'Index was out of range; add new node to end of list
+        SListInsertNodeEnd(list, newNode)
+    else
+        'List is empty or index is invalid
+        SListInsertNodeBeginning(list, newNode)
+    endif
+endsub
+
+'Set value of node at index in list;
+'Only allocates a new node if index is out of range; 
+'the new node is either inserted at the beginning or end of the list
+sub SListSetValueAt(SList &list, index, value$)
+    dim i
+    dim SListNode &node = &list.head
+    'Check if list is empty
+    if &list.head <> null and index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Set node value
+                node.value$ = value$
+                return  'Exit loop
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+        'Index was out of range; add new node to end of list
+        SListInsertEnd(list, value$)
+    else
+        'List is empty or index is invalid
+        SListInsertBeginning(list, value$)
+    endif
+endsub
+
+'Insert node after another node in a SList
+sub SListInsertAfter(SList &list, SListNode &node, SListNode &newNode)
+    &newNode.prevNode = &node
+    &newNode.nextNode = &node.nextNode
+    if &node.nextNode = null then
+        &list.tail = &newNode
+    else
+        &node.nextNode.prevNode = &newNode        
+    endif
+    &node.nextNode = &newNode
+endsub
+
+'Insert node before another node in a SList
+sub SListInsertBefore(SList &list, SListNode &node, SListNode &newNode)
+    &newNode.prevNode = &node.prevNode
+    &newNode.nextNode = &node
+    if &node.prevNode = null then
+        &list.head = &newNode
+    else
+        &node.prevNode.nextNode = &newNode        
+    endif
+    &node.prevNode = &newNode
+endsub
+
+
+'Remove node from SList; assumes node exists in SList
+'Note: Basic4GL does not deallocate memory until program completes
+sub SListRemove(SList &list, SListNode &node)
+    'Check if node is null
+    if &node = null then
+        'Do nothing
+        return
+    endif
+    if &node.prevNode = null then
+       &list.head = &node.nextNode
+    else
+       &node.prevNode.nextNode = &node.nextNode
+    endif
+    if &node.nextNode = null then
+       &list.tail = &node.prevNode
+    else
+       &node.nextNode.prevNode = &node.prevNode
+    endif
+endsub
+
+'Remove element from SList at index
+'Note: Basic4GL does not deallocate memory until program completes
+sub SListRemoveAt(SList &list, index)
+    dim i
+    dim SListNode &node = &list.head
+    'Traverse list forwards
+    while &node <> null
+        if i = index then
+            SListRemove(list, node)
+            return  'Exit loop
+        endif
+        &node = &node.nextNode
+        i = i + 1
+    wend
+endsub
+
+'Remove first element from SList that equals value
+'Note: Basic4GL does not deallocate memory until program completes
+sub SListRemoveFirst(SList &list, value$)
+    dim SListNode &node = &list.head
+    'Traverse list forwards
+    while &node <> null
+        if node.value$ = value$ then
+            SListRemove(list, node)
+            return  'Exit loop
+        endif
+        &node = &node.nextNode
+    wend
+endsub
+
+'Remove last element from SList that equals value
+'Note: Basic4GL does not deallocate memory until program completes
+sub SListRemoveLast(SList &list, value$)
+    dim SListNode &node = &list.tail
+    'Traverse list backwards
+    while &node <> null
+        if node.value$ = value$ then
+            SListRemove(list, node)
+            return  'Exit loop
+        endif
+        &node = &node.prevNode
+    wend
+endsub
+
+'Returns value at index in list; returns default value if index is invalid
+function SListValueAt$(SList &list, index)
+    dim i
+    dim SListNode &node = &list.head   
+    if index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Return value
+                return node.value$
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+    endif
+    'Index was invalid; return default value
+    return SLIST_DEFAULT_VALUE$
+endfunction
+
+'Returns node at index in list; returns null if index is invalid
+function SListNode &SListNodeAt(SList &list, index)
+    dim i
+    dim SListNode &node = &list.head   
+    if index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Return value
+                return &node
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+    endif
+    'Index was invalid; return null
+    return null
+endfunction
+
+'Compare the values of two nodes
+'Returns true if nodes' values are equal
+function SListNodeEquals(SListNode &node1, SListNode &node2)
+    return &node1.value$ = &node2.value$
+endfunction
+
+'Get size of list
+function SListSize(SList &list)
+    dim size = 0
+    dim SListNode &node = &list.head
+    'Traverse list forwards
+    while &node <> null
+        &node = &node.nextNode
+        size = size + 1
+    wend
+    return size
+endfunction

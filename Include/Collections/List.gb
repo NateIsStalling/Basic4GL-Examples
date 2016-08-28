@@ -1,0 +1,326 @@
+'list.gb
+'Description: Integer list structure, List, and related functions + subroutines
+'Author: Nathaniel Nielsen
+'Last Updated: August 27, 2016
+'Uses doubly linked list implementation
+'See: https://en.wikipedia.org/wiki/Doubly_linked_list
+
+'Default value returned by ListValueAt()
+const LIST_DEFAULT_VALUE = 0
+
+'List node, is doubly linked
+struc ListNode
+    dim value
+    dim ListNode &prevNode, ListNode &nextNode
+endstruc
+
+'Real list, is doubly linked
+struc List
+    'First element in list
+    dim ListNode &head
+    'Last element in list
+    dim ListNode &tail
+endstruc   
+
+'Function declarations
+declare sub ListInsertBeginning(List &list, value)
+declare sub ListInsertNodeBeginning(List &list, ListNode &newNode)
+declare sub ListInsertEnd(List &list, value)
+declare sub ListInsertNodeEnd(List &list, ListNode &newNode)
+declare sub ListInsertAt(List &list, index, value)
+declare sub ListInsertNodeAt(List &list, index, ListNode &newNode)
+declare sub ListSetValueAt(List &list, index, value)
+
+declare sub ListInsertAfter(List &list, ListNode &node, ListNode &newNode)
+declare sub ListInsertBefore(List &list, ListNode &node, ListNode &newNode)
+
+declare sub ListRemove(List &list, ListNode &node)
+declare sub ListRemoveAt(List &list, index)
+declare sub ListRemoveFirst(List &list, value)
+declare sub ListRemoveLast(List &list, value)
+
+declare function ListValueAt(List &list, index)
+declare function ListNode &ListNodeAt(List &list, index)
+declare function ListNodeEquals(ListNode &node1, ListNode &node2)
+
+declare function ListSize(List &list)
+ 
+'Add value to beginning of List
+sub ListInsertBeginning(List &list, value)
+    'Allocate new node
+    dim ListNode &node
+    alloc node
+    node.value = value
+
+    if &list.head = null then 
+        &list.head = &node
+        &list.tail = &node
+        &node.prevNode = null
+        &node.nextNode = null
+    else
+        ListInsertBefore(list, list.head, node)
+    endif
+endsub
+
+'Add node to beginning of List
+sub ListInsertNodeBeginning(List &list, ListNode &newNode)
+    if &list.head = null then 
+        &list.head = &newNode
+        &list.tail = &newNode
+        &newNode.prevNode = null
+        &newNode.nextNode = null
+    else
+        ListInsertBefore(list, list.head, newNode)
+    endif
+endsub
+
+'Add value to end of List
+sub ListInsertEnd(List &list, value)
+    'Allocate new node
+    dim ListNode &node
+    alloc node
+    node.value = value
+
+    if &list.tail = null then 
+        ListInsertNodeBeginning(list, node)
+    else
+        ListInsertAfter(list, list.tail, node)
+    endif
+endsub
+
+'Add node to end of List
+sub ListInsertNodeEnd(List &list, ListNode &newNode)
+    if &list.tail = null then 
+        ListInsertNodeBeginning(list, newNode)
+    else
+        ListInsertAfter(list, list.tail, newNode)
+    endif
+endsub
+
+'Insert node at index in a List;
+'Inserts node at beginning of list if list is empty or index is less than 0,
+'Inserts node at end of list if index is greater than the list's size
+sub ListInsertAt(List &list, index, value)
+    dim i
+    dim ListNode &node = &list.head
+    'Allocate new node
+    dim ListNode &newNode
+    alloc newNode
+    newNode.value = value
+
+    'Check if list is empty
+    if &list.head <> null and index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Add new node
+                ListInsertBefore(list, node, newNode)
+                return  'Exit loop
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+        'Index was out of range; add new node to end of list
+        ListInsertNodeEnd(list, newNode)
+    else
+        'List is empty or index is invalid
+        ListInsertNodeBeginning(list, newNode)
+    endif
+endsub
+        
+'Insert node at index in a List;
+'Inserts node at beginning of list if list is empty or index is less than 0,
+'Inserts node at end of list if index is greater than the list's size
+sub ListInsertNodeAt(List &list, index, ListNode &newNode)
+    dim i
+    dim ListNode &node = &list.head
+    'Check if list is empty
+    if &list.head <> null and index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Add new node
+                ListInsertBefore(list, node, newNode)
+                return  'Exit loop
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+        'Index was out of range; add new node to end of list
+        ListInsertNodeEnd(list, newNode)
+    else
+        'List is empty or index is invalid
+        ListInsertNodeBeginning(list, newNode)
+    endif
+endsub
+
+'Set value of node at index in list;
+'Only allocates a new node if index is out of range; 
+'the new node is either inserted at the beginning or end of the list
+sub ListSetValueAt(List &list, index, value)
+    dim i
+    dim ListNode &node = &list.head
+    'Check if list is empty
+    if &list.head <> null and index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Set node value
+                node.value = value
+                return  'Exit loop
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+        'Index was out of range; add new node to end of list
+        ListInsertEnd(list, value)
+    else
+        'List is empty or index is invalid
+        ListInsertBeginning(list, value)
+    endif
+endsub
+
+'Insert node after another node in a List
+sub ListInsertAfter(List &list, ListNode &node, ListNode &newNode)
+    &newNode.prevNode = &node
+    &newNode.nextNode = &node.nextNode
+    if &node.nextNode = null then
+        &list.tail = &newNode
+    else
+        &node.nextNode.prevNode = &newNode        
+    endif
+    &node.nextNode = &newNode
+endsub
+
+'Insert node before another node in a List
+sub ListInsertBefore(List &list, ListNode &node, ListNode &newNode)
+    &newNode.prevNode = &node.prevNode
+    &newNode.nextNode = &node
+    if &node.prevNode = null then
+        &list.head = &newNode
+    else
+        &node.prevNode.nextNode = &newNode        
+    endif
+    &node.prevNode = &newNode
+endsub
+
+
+'Remove node from List; assumes node exists in List
+'Note: Basic4GL does not deallocate memory until program completes
+sub ListRemove(List &list, ListNode &node)
+    'Check if node is null
+    if &node = null then
+        'Do nothing
+        return
+    endif
+    if &node.prevNode = null then
+       &list.head = &node.nextNode
+    else
+       &node.prevNode.nextNode = &node.nextNode
+    endif
+    if &node.nextNode = null then
+       &list.tail = &node.prevNode
+    else
+       &node.nextNode.prevNode = &node.prevNode
+    endif
+endsub
+
+'Remove element from List at index
+'Note: Basic4GL does not deallocate memory until program completes
+sub ListRemoveAt(List &list, index)
+    dim i
+    dim ListNode &node = &list.head
+    'Traverse list forwards
+    while &node <> null
+        if i = index then
+            ListRemove(list, node)
+            return  'Exit loop
+        endif
+        &node = &node.nextNode
+        i = i + 1
+    wend
+endsub
+
+'Remove first element from List that equals value
+'Note: Basic4GL does not deallocate memory until program completes
+sub ListRemoveFirst(List &list, value)
+    dim ListNode &node = &list.head
+    'Traverse list forwards
+    while &node <> null
+        if node.value = value then
+            ListRemove(list, node)
+            return  'Exit loop
+        endif
+        &node = &node.nextNode
+    wend
+endsub
+
+'Remove last element from List that equals value
+'Note: Basic4GL does not deallocate memory until program completes
+sub ListRemoveLast(List &list, value)
+    dim ListNode &node = &list.tail
+    'Traverse list backwards
+    while &node <> null
+        if node.value = value then
+            ListRemove(list, node)
+            return  'Exit loop
+        endif
+        &node = &node.prevNode
+    wend
+endsub
+
+'Returns value at index in list; returns default value if index is invalid
+function ListValueAt(List &list, index)
+    dim i
+    dim ListNode &node = &list.head   
+    if index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Return value
+                return node.value
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+    endif
+    'Index was invalid; return default value
+    return LIST_DEFAULT_VALUE
+endfunction
+
+'Returns node at index in list; returns null if index is invalid
+function ListNode &ListNodeAt(List &list, index)
+    dim i
+    dim ListNode &node = &list.head   
+    if index >= 0 then
+        'Traverse list forwards
+        while &node <> null
+            if i = index then
+                'Return value
+                return &node
+            endif
+            &node = &node.nextNode
+            i = i + 1
+        wend
+    endif
+    'Index was invalid; return null
+    return null
+endfunction
+
+'Compare the values of two nodes
+'Returns true if nodes' values are equal
+function ListNodeEquals(ListNode &node1, ListNode &node2)
+    return &node1.value = &node2.value
+endfunction
+
+'Get size of list
+function ListSize(List &list)
+    dim size = 0
+    dim ListNode &node = &list.head
+    'Traverse list forwards
+    while &node <> null
+        &node = &node.nextNode
+        size = size + 1
+    wend
+    return size
+endfunction
