@@ -1,0 +1,67 @@
+'ListOperations.gb
+'Description: Sample program demonstrating basic list functionality
+'Author: Nathaniel Nielsen
+'Last Updated: August 27, 2016
+
+'Change list.gb to slist.gb for string lists, or rlist.gb for real value lists
+include Include/Collections/list.gb
+
+declare sub PrintList(List list)    'Used to output list contents
+dim List list   'List object
+
+'Populate list with 1,2,3,4,5,4,3,2,1
+ListInsertEnd(list, 1)
+ListInsertEnd(list, 2)
+ListInsertEnd(list, 3)
+ListInsertEnd(list, 4)
+ListInsertEnd(list, 5)
+ListInsertEnd(list, 4)
+ListInsertEnd(list, 3)
+ListInsertEnd(list, 2)
+ListInsertEnd(list, 1)
+
+PrintList(list) 'Expected output 123454321
+printr "" 'Print newline
+                      
+'Remove element at index 1
+ListRemoveAt(list, 1) 
+PrintList(list) 'Expected output 13454321
+printr "" 'Print newline
+                        
+'Remove first occurence of the value 3
+ListRemoveFirst(list, 3)
+PrintList(list) 'Expected output 1454321
+printr "" 'Print newline
+
+'Remove last occurence of the value 4
+ListRemoveLast(list, 4)
+PrintList(list) 'Expected output 145321
+printr "" 'Print newline
+ 
+'Set values at specified indexes
+ListSetValueAt(list, 1, 0)
+ListSetValueAt(list, 2, 0)
+ListSetValueAt(list, 3, 0)
+ListSetValueAt(list, 4, 0)
+PrintList(list) 'Expected output 100001
+printr "" 'Print newline
+
+'Set values at invalid indexes
+ListSetValueAt(list, -1, 0)
+ListSetValueAt(list, 10000, 0)
+PrintList(list) 'Expected output 01000010
+printr "" 'Print newline
+
+SwapBuffers() 'Refresh screen; optional
+end 'end of program
+
+'Print list contents
+sub PrintList(List list)
+    dim ListNode &node
+    'Traverse list forwards
+    &node = &list.head
+    while &node <> null
+        print node.value
+        &node = &node.nextNode
+    wend
+endsub
